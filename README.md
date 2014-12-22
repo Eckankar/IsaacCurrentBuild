@@ -9,7 +9,14 @@ Might be useful for making chatbots for people streaming Binding of Isaac: Rebir
 
 # Installation
 
-Download the source code and compile it with Visual Studio, or download the binary file.
+Download the source code and compile it with Visual Studio, or [download the binary file](https://github.com/Eckankar/IsaacCurrentBuild/releases).
+
+# Usage
+
+Run the program, and it'll output to console the current build information.
+
+Note for if you're testing it out: The program automatically closes itself. (To allow for better integration with bots or whatnot.) If you need it
+to stay open, run it from the console.
 
 # Known limitations
 
