@@ -16,7 +16,7 @@ Download the source code and compile it with Visual Studio, or [download the bin
 Run the program, and it'll output to console the current build information.
 
 Note for if you're testing it out: The program automatically closes itself. (To allow for better integration with bots or whatnot.) If you need it
-to stay open, run it from the console.
+to stay open, [download this version instead](http://brohr.coq.dk/data/IsaacCurrentBuild.zip).
 
 # Known limitations
 
