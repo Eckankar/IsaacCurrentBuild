@@ -14,12 +14,29 @@ let (|Match|_|) pattern input =
     let m = Regex.Match(input, pattern) in
     if m.Success then Some (List.tail [ for g in m.Groups -> g.Value ]) else None
 
-let rec findLastGame ls g =
+let rec findLastSection rx ls g =
     match ls with
        | [] -> g
        | (l :: ls) -> match l with
-                        | Match "RNG Start Seed: (.{4} .{4})" [seed] -> findLastGame ls (Some (seed, l::ls))
-                        | _                        -> findLastGame ls g
+                        | Match rx data -> findLastSection rx ls (Some (data, l::ls))
+                        | _             -> findLastSection rx ls g
+
+let rec findLastMatch rx ls g =
+    match ls with
+       | [] -> g
+       | (l :: ls) -> match l with
+                        | Match rx data -> findLastMatch rx ls (Some data)
+                        | _             -> findLastMatch rx ls g
+
+let findLastGame  ls = findLastSection "RNG Start Seed: (.{4} .{4})" ls None
+let findLastFloor ls = findLastSection "Level::Init m_Stage (\d), m_AltStage (\d)" ls None
+let findCurse     ls = Option.map List.head <| findLastMatch "(Curse of(?: the)? [^\s!]+)" ls None
+
+let normalizeCurse s =
+    match s with
+      | "Curse of Blind" -> "Curse of the Blind"
+      | "Curse of Maze"  -> "Curse of the Maze"
+      | _                -> s
 
 let rec obtainedItems ls its =
     match ls with
@@ -51,6 +68,21 @@ let currentPlayer ls =
           )
        |> List.concat |> List.rev |> (fun l -> match l with | [] -> "<ERROR>" | (pid::_) -> pidToPlayer <| Convert.ToInt32 pid)
 
+let addFloorNumber name num curse =
+    match curse with
+        | Some "Curse of the Labyrinth" -> sprintf "%s XL" name
+        | _                             -> sprintf "%s %d" name num
+
+let getFloorName fnum alt curse =
+    match fnum with
+        | 1 | 2 -> addFloorNumber (if alt then "Cellar" else "Basement") fnum curse
+        | 3 | 4 -> addFloorNumber (if alt then "Catacombs" else "Caves") (fnum-2) curse
+        | 5 | 6 -> addFloorNumber (if alt then "Necropolis" else "Depths") (fnum-4) curse
+        | 7 | 8 -> addFloorNumber (if alt then "Utero" else "Womb") (fnum-6) curse
+        | 9     -> if alt then "Cathedral" else "Sheol"
+        | 11    -> if alt then "Chest" else "Dark Room"
+        | _     -> sprintf "Unknown floor (fnum=%d)" fnum
+
 let isInList ls item = Option.isSome (List.tryFind (fun e -> e =~ item) ls)
 
 let isActive = isInList activatedItems
@@ -78,8 +110,8 @@ let main argv =
     sr.Close()
     f.Close()
 
-    match findLastGame lines None with
-        | Some (seed, lastGame) ->
+    match findLastGame lines with
+        | Some ([seed], lastGame) ->
             printfn "Playing as %s" (currentPlayer lastGame)
 
             let obtItems = obtainedItems lastGame []
@@ -88,12 +120,23 @@ let main argv =
                         | (Some it, its) -> it :: its
 
             printfn "Current seed: %s" seed
+
+            let (fnum, alt, lastFloor) = match findLastFloor lastGame with
+                                            | Some ([fnum; alt], lastFloor) ->  (fnum, alt, lastFloor)
+                                            | _                             -> ("-1", "-1", [])
+
+            let curse = Option.map normalizeCurse <| findCurse lastFloor
+            let floorName = getFloorName (Convert.ToInt32 fnum) (alt = "1") curse
+            let curseStr = match curse with
+                             | Some c -> sprintf " (%s)" c
+                             | None   -> ""
+            printfn "Current floor: %s%s" floorName curseStr
             printfn "Current items: %s" (String.concat ", " its)
             
             printTransformationStatus obtItems guppyItems "Guppy" "CATMODE"
             printTransformationStatus obtItems flyItems "Lord of the Flies" "Jeff Goldblum"
 
             0
-        | None ->
+        | _ ->
             printfn "Can't find any Isaac game info."
             0
