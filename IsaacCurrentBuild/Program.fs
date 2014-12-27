@@ -28,6 +28,29 @@ let rec obtainedItems ls its =
                         | Match "Adding collectible \d+ \(([^)]+)\)" [item] -> obtainedItems ls (item :: its)
                         | _                                                 -> obtainedItems ls its
 
+let pidToPlayer pid =
+    match pid with
+        | 0 -> "Isaac"
+        | 1 -> "Maggie"
+        | 2 -> "Cain"
+        | 3 -> "Judas"
+        | 4 -> "???"
+        | 5 -> "Eve"
+        | 6 -> "Samson"
+        | 7 -> "Azazel"
+        | 8 -> "Lazarus"
+        | 9 -> "Eden"
+        | 10 -> "The Lost"
+        | _  -> sprintf "<PID #%d>" pid
+
+let currentPlayer ls =
+    ls |> List.map (fun l ->
+                match l with 
+                    | Match "Initialized player with Variant 0 and Subtype (\d)" [pid] -> [pid]
+                    | _                                                                -> []
+          )
+       |> List.concat |> List.rev |> (fun l -> match l with | [] -> "<ERROR>" | (pid::_) -> pidToPlayer <| Convert.ToInt32 pid)
+
 let isInList ls item = Option.isSome (List.tryFind (fun e -> e =~ item) ls)
 
 let isActive = isInList activatedItems
@@ -57,6 +80,8 @@ let main argv =
 
     match findLastGame lines None with
         | Some (seed, lastGame) ->
+            printfn "Playing as %s" (currentPlayer lastGame)
+
             let obtItems = obtainedItems lastGame []
             let its = match (lastActive obtItems, purgeActive obtItems) with
                         | (None, its)    -> its
