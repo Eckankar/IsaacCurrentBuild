@@ -29,7 +29,7 @@ let rec findLastMatch rx ls g =
                         | _             -> findLastMatch rx ls g
 
 let findLastGame  ls = findLastSection "RNG Start Seed: (.{4} .{4})" ls None
-let findLastFloor ls = findLastSection "Level::Init m_Stage (\d), m_AltStage (\d)" ls None
+let findLastFloor ls = findLastSection "Level::Init m_Stage (\d+), m_AltStage (\d+)" ls None
 let findCurse     ls = Option.map List.head <| findLastMatch "(Curse of(?: the)? [^\s!]+)" ls None
 
 let normalizeCurse s =
